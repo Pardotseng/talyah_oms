@@ -1,4 +1,5 @@
-flask
+'flask
 flask-sqlalchemy
 werkzeug
 sqlalchemy
+gunicorn' | Out-File -FilePath 'requirements.txt' -Encoding utf8
