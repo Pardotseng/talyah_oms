@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8"><title>庫存與商品管理 - TalYah OMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex h-screen overflow-hidden">
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex border-r border-slate-800">
+        <div>
+            <div class="p-6 border-b border-slate-800"><span class="text-xl font-bold text-white">TalYah OMS</span></div>
+            <nav class="p-4 space-y-1">
+                <a href="/dashboard" class="flex items-center px-4 py-3 rounded-lg hover:bg-slate-800 text-sm font-medium">營運戰情室</a>
+                <a href="/orders" class="flex items-center px-4 py-3 rounded-lg hover:bg-slate-800 text-sm font-medium">訂單與生命週期</a>
+                <a href="/inventory" class="flex items-center px-4 py-3 rounded-lg bg-blue-600 text-white text-sm font-medium">庫存水位與商品</a>
+                <a href="/customers" class="flex items-center px-4 py-3 rounded-lg hover:bg-slate-800 text-sm font-medium">客戶主檔與信用</a>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-slate-800"><a href="/logout" class="block w-full text-center bg-red-600/10 text-red-400 py-2 rounded-lg text-sm">安全登出</a></div>
+    </aside>
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header class="bg-white border-b h-16 flex items-center justify-between px-8 shadow-sm">
+            <h1 class="text-lg font-bold text-slate-800">庫存水位與商品管理</h1>
+            <span class="text-sm font-medium text-slate-600">使用者: <b>{{ user }}</b></span>
+        </header>
+        <main class="flex-1 overflow-y-auto p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border h-fit">
+                    <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b">新增商品 SKU</h2>
+                    <form id="prod-form" class="space-y-4">
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">SKU 代碼 *</label><input type="text" id="p-sku" class="w-full border p-2 rounded-lg text-sm" required></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">商品說明 *</label><input type="text" id="p-desc" class="w-full border p-2 rounded-lg text-sm" required></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">標準原價 *</label><input type="number" step="0.01" id="p-orig" class="w-full border p-2 rounded-lg text-sm" required></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">空運價</label><input type="number" step="0.01" id="p-air" class="w-full border p-2 rounded-lg text-sm"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">海運價</label><input type="number" step="0.01" id="p-sea" class="w-full border p-2 rounded-lg text-sm"></div>
+                        </div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">初始庫存量</label><input type="number" id="p-stock" value="100" class="w-full border p-2 rounded-lg text-sm"></div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-medium transition">建立商品</button>
+                    </form>
+                    <p id="p-msg" class="mt-3 text-sm font-medium text-center"></p>
+                </div>
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border overflow-hidden">
+                    <div class="p-6 border-b"><h2 class="text-md font-bold text-slate-800">即時庫存水位矩陣</h2></div>
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-xs uppercase border-b">
+                                <th class="p-4">SKU</th><th class="p-4">說明</th><th class="p-4">原價/空/海</th><th class="p-4">庫存水位</th><th class="p-4">狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inv-tbody" class="text-sm divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        async function loadInventory() {
+            const res = await fetch('/api/inventory');
+            const data = await res.json();
+            document.getElementById('inv-tbody').innerHTML = data.map(p => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-4 font-mono font-bold text-blue-600">${p.sku_code}</td>
+                    <td class="p-4 font-semibold">${p.description}</td>
+                    <td class="p-4 text-xs">原:$${p.origin_price} | 空:${p.air_price?'$'+p.air_price:'-'} | 海:${p.sea_price?'$'+p.sea_price:'-'}</td>
+                    <td class="p-4 font-bold">${p.stock}</td>
+                    <td class="p-4"><span class="px-2 py-0.5 rounded text-xs font-bold ${p.stock > p.safety_stock ? 'bg-emerald-100 text-emerald-800':'bg-red-100 text-red-800'}">${p.status}</span></td>
+                </tr>
+            `).join('') || `<tr><td colspan="5" class="p-8 text-center text-slate-400">尚無商品</td></tr>`;
+        }
+        document.getElementById('prod-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const res = await fetch('/api/inventory', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sku_code: document.getElementById('p-sku').value,
+                    description: document.getElementById('p-desc').value,
+                    origin_price: document.getElementById('p-orig').value,
+                    air_price: document.getElementById('p-air').value,
+                    sea_price: document.getElementById('p-sea').value,
+                    stock_quantity: document.getElementById('p-stock').value
+                })
+            });
+            const data = await res.json();
+            const msg = document.getElementById('p-msg');
+            if(res.ok) {
+                msg.innerText = "✅ " + data.message; msg.className = "mt-3 text-sm font-medium text-center text-emerald-600";
+                document.getElementById('prod-form').reset(); loadInventory();
+            } else {
+                msg.innerText = "❌ " + data.error; msg.className = "mt-3 text-sm font-medium text-center text-red-600";
+            }
+        };
+        loadInventory();
+    </script>
+</body>
+</html>

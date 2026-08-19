@@ -1,0 +1,1 @@
+# Placeholder for app/services/inventory_manager.py
