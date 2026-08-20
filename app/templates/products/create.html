@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>新增產品 - TalYah OMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container my-5" style="max-width: 600px;">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">🏷️ 新增產品 SKU</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">SKU 編號 (例: TY-SKU-002)：</label>
+                        <input type="text" name="sku_code" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">所屬品牌：</label>
+                        <select name="brand_id" class="form-select" required>
+                            <option value="">-- 請選擇品牌 --</option>
+                            {% for brand in brands %}
+                                <option value="{{ brand.id }}">{{ brand.name }} ({{ brand.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">商品描述：</label>
+                        <input type="text" name="description" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">單位 (例: PCS)：</label>
+                        <input type="text" name="unit" class="form-control" value="PCS" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">標準定價：</label>
+                            <input type="number" step="0.01" name="original_price" class="form-control" value="0" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">空運價：</label>
+                            <input type="number" step="0.01" name="air_price" class="form-control" value="0" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">海運價：</label>
+                            <input type="number" step="0.01" name="sea_price" class="form-control" value="0" required>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('product_bp.product_list') }}" class="btn btn-outline-secondary">返回列表</a>
+                        <button type="submit" class="btn btn-primary">儲存產品</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

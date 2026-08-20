@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}訂單管理 - TalYah OMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📦 訂單管理列表</h2>
+    <a href="{{ url_for('order_bp.create_order') }}" class="btn btn-primary">+ 建立新訂單</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>訂單編號 (Invoice No)</th>
+                    <th>訂單日期</th>
+                    <th>客戶名稱</th>
+                    <th>訂單狀態</th>
+                    <th>總數量</th>
+                    <th>總金額 (TWD)</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if orders %}
+                    {% for order in orders %}
+                    <tr>
+                        <td><strong>{{ order.invoice_no }}</strong></td>
+                        <td>{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else '-' }}</td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>
+                            {% if order.status == 'draft' %}
+                                <span class="badge bg-secondary">草稿</span>
+                            {% else %}
+                                <span class="badge bg-success">已確認</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ order.total_quantity }}</td>
+                        <td>${{ "{:,.0f}".format(order.total_amount) }}</td>
+                        <td>
+                            <a href="{{ url_for('order_bp.edit_order', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">編輯明細</a>
+                            <form action="{{ url_for('order_bp.copy_order', order_id=order.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" onclick="return confirm('確定複製訂單？')">複製</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">目前尚無任何訂單資料。</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

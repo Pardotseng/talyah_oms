@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>編輯訂單 {{ order.invoice_no }} - TalYah OMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>📋 訂單編輯與明細管理</h2>
+            <a href="{{ url_for('order_bp.order_list') }}" class="btn btn-outline-secondary">返回訂單列表</a>
+        </div>
+
+        <!-- 訊息提示 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- 訂單表頭資訊 -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">訂單編號：<span class="text-warning">{{ order.invoice_no }}</span> (狀態: {{ '草稿' if order.status == 'draft' else '已確認' }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3"><strong>客戶代碼：</strong> {{ order.customer_id }}</div>
+                    <div class="col-md-3"><strong>客戶名稱：</strong> {{ order.customer_name }}</div>
+                    <div class="col-md-3"><strong>統一編號：</strong> {{ order.customer_tax_id or '-' }}</div>
+                    <div class="col-md-3"><strong>客戶等級：</strong> {{ order.customer_level_name }}</div>
+                </div>
+            </div>
+        </div>
+
+        {% if order.status == 'draft' %}
+        <!-- 步驟 4 & 5：新增 SKU 明細表單 -->
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">➕ 加入商品 SKU 到訂單明細</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('order_bp.add_item', order_id=order.id) }}" method="POST" class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="sku_id" class="form-label">選擇 SKU 商品 (支援搜尋/過濾)：</label>
+                        <select name="sku_id" id="sku_id" class="form-select" required>
+                            <option value="">-- 請選擇或搜尋商品 --</option>
+                            {% for sku in skus %}
+                                <option value="{{ sku.id }}">[{{ sku.sku_code }}] {{ sku.description }} (定價: ${{ sku.original_price }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="air_or_sea" class="form-label">價格模式：</label>
+                        <select name="air_or_sea" class="form-select">
+                            <option value="standard">標準定價</option>
+                            <option value="air">空運價</option>
+                            <option value="sea">海運價</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="quantity" class="form-label">購買數量：</label>
+                        <input type="number" name="quantity" id="quantity" class="form-control" value="1" min="1" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success w-100">加入明細</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 明細清單 (對應步驟 6、7) -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">📦 訂單明細項目清單</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>SKU 編號</th>
+                            <th>商品描述</th>
+                            <th>單位</th>
+                            <th>數量</th>
+                            <th>建議單價</th>
+                            <th>金額 (含五捨六入)</th>
+                            <th>價格來源</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if order.items %}
+                            {% for item in order.items %}
+                            <tr class="{% if sku_counts[item.product_id] > 1 %}table-warning{% endif %}">
+                                <td>{{ item.sku_code }}</td>
+                                td>
+                                    {{ item.description }}
+                                    {% if sku_counts[item.product_id] > 1 %}
+                                        <br><small class="text-danger">⚠️ 警告：此 SKU 已重複加入明細</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.unit }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>${{ "{:,.2f}".format(item.unit_price) }}</td>
+                                <td><strong>${{ "{:,.0f}".format(item.amount) }}</strong></td>
+                                <td><span class="badge bg-info text-dark">{{ item.price_source }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3">本張訂單目前尚無明細，請透過上方表單加入商品。</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+
+                <!-- 訂單總計 -->
+                <div class="d-flex justify-content-end text-end">
+                    <div class="p-3 bg-light border rounded">
+                        <p class="mb-1"><strong>總數量：</strong> {{ order.total_quantity }}</p>
+                        <h4 class="text-danger mb-0"><strong>訂單總金額 (TWD)：</strong> ${{ "{:,.0f}".format(order.total_amount) }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步驟 8：確認訂單 -->
+        {% if order.status == 'draft' %}
+        <div class="d-flex justify-content-end">
+            <form action="{{ url_for('order_bp.confirm_order', order_id=order.id) }}" method="POST">
+                <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('確定要確認訂單嗎？確認後將鎖定快照無法再修改！')">🔒 確認訂單 (鎖定快照)</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}客戶管理 - TalYah OMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🏢 客戶資料維護</h2>
+    <a href="{{ url_for('customer_bp.create_customer') }}" class="btn btn-primary">+ 新增客戶</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>客戶代碼</th>
+                    <th>公司名稱</th>
+                    <th>統一編號</th>
+                    <th>電話</th>
+                    <th>等級</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td><strong>{{ customer.code }}</strong></td>
+                    <td>{{ customer.name }}</td>
+                    <td>{{ customer.tax_id or '-' }}</td>
+                    <td>{{ customer.phone or '-' }}</td>
+                    <td>{{ customer.level.name if customer.level else '無' }}</td>
+                    <td>
+                        <a href="{{ url_for('customer_bp.edit_customer', code=customer.code) }}" class="btn btn-sm btn-outline-primary">編輯</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-3">目前尚無客戶資料。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
